@@ -116,8 +116,6 @@ class FetchSpec extends Specification with StubServer {
 
       val f = FutureConverters.toScala(cs)
 
-      //      obj.getClass === classOf[ScriptObjectMirror]
-
       val response = Await.result(f, timeout)
       response === "200 OK"
     }

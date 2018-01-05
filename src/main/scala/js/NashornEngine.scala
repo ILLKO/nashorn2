@@ -85,9 +85,7 @@ object NashornEngine {
   }
 
   def initScriptContext(engine: ScriptEngine): SimpleScriptContext = {
-    val sc = new SimpleScriptContext()
-    sc.setBindings(engine.createBindings, ScriptContext.ENGINE_SCOPE)
-    sc
+    new SimpleScriptContext()
   }
 
   def readResource(resource: String): String = {
