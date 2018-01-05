@@ -1,28 +1,21 @@
 package js
 
-import com.github.tomakehurst.wiremock.WireMockServer
-import org.specs2.mutable.{BeforeAfter, Specification}
-import com.github.tomakehurst.wiremock.client.WireMock
-import java.util.concurrent.{CompletionStage, TimeUnit}
+import java.util.concurrent.CompletionStage
 
 import akka.http.scaladsl.model.HttpResponse
-import jdk.nashorn.api.scripting.ScriptObjectMirror
-import org.specs2.concurrent.ExecutionEnv
 import org.specs2.specification.BeforeAfterAll
 
 import scala.compat.java8.FutureConverters
-import scala.concurrent.{Await, Future}
-//import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.Duration
-import org.specs2.mutable.{BeforeAfter, Specification}
+import scala.concurrent.Await
+import akka.http.scaladsl.model.StatusCodes
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration._
-import dispatch.{Http, url}
-import FetchOnAkka._
-import akka.http.scaladsl.model.StatusCodes
-import scala.concurrent.duration.{Duration, _}
+import js.FetchOnAkka._
+import org.specs2.mutable.Specification
+
+import scala.concurrent.duration._
 
 trait StubServer extends BeforeAfterAll {
   val Port = 8080
