@@ -70,23 +70,22 @@ class FetchSpec extends Specification with StubServer {
             .withStatus(200)
             .withBody("Response Body")))
 
-     val js =
-       s"""(function (context) {
-         |  'use strict';
-         |
+      val js =
+        s"""(function (context) {
+           |  'use strict';
+           |
          |var cs = fetch("${url(path)}")
-         |  return cs;
-         |})(this);
+           |  return cs;
+           |})(this);
        """.stripMargin
 
       val ne = NashornEngine.init()
-      ne.evalResource("/scala-promise.js")
       ne.evalResource("/fetch.js")
       val cs = ne.evalString(js).asInstanceOf[CompletionStage[HttpResponse]]
 
       val f = FutureConverters.toScala(cs)
 
-//      obj.getClass === classOf[ScriptObjectMirror]
+      //      obj.getClass === classOf[ScriptObjectMirror]
 
       val response = Await.result(f, timeout)
       response.status === StatusCodes.OK
@@ -108,42 +107,27 @@ class FetchSpec extends Specification with StubServer {
         s"""(function (context) {
            |  'use strict';
            |
-         |var cs = fetch("${url(path)}")
-           |  return cs;
+           |var cs = fetch("${url(path)}").thenApply(function(response) {
+           |  print("Got response")
+           |  var status = response.status().value();
+           |  print(status);
+           |  return status;
+           |});
+           |return cs;
            |})(this);
        """.stripMargin
 
       val ne = NashornEngine.init()
-      ne.evalResource("/scala-promise.js")
       ne.evalResource("/fetch.js")
-      val cs = ne.evalString(js).asInstanceOf[CompletionStage[HttpResponse]]
+      val cs = ne.evalString(js).asInstanceOf[CompletionStage[String]]
 
       val f = FutureConverters.toScala(cs)
 
       //      obj.getClass === classOf[ScriptObjectMirror]
 
       val response = Await.result(f, timeout)
-      response.status === StatusCodes.OK
-
-      val bodyFuture = response.entity.toStrict(timeout).map(_.data.utf8String)
-      Await.result(bodyFuture, timeout) === "Response Body"
+      response === "200 OK"
     }
-
-//      .thenApply(function(response) {
-//        //        print("Got response")
-//        //        var response = JSON.stringify(response)
-//        //        print(response);
-//        //        return response;
-//        //      }
-
-
-//      .thenApply(function(response) {
-//        print("Got response")
-//        var response = JSON.stringify(response)
-//        print(response);
-//        return response;
-//      })
-
   }
 
 }
