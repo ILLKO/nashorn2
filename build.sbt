@@ -5,12 +5,17 @@ version := "0.1"
 scalaVersion := "2.11.11"
 
 val akkaV = "2.4.20"
-val akkaHttpV = "10.0.11"
+val sttpV = "1.1.3"
+//val akkaHttpV = "10.0.11"
 val specsV = "3.8.4"
 val slf4jV = "1.7.25"
 
 libraryDependencies ++= Seq(
-  "com.typesafe.akka" %% "akka-http" % akkaHttpV,
+  "com.softwaremill.sttp" %% "core" % sttpV,
+  "com.softwaremill.sttp" %% "akka-http-backend" % sttpV,
+  "com.softwaremill.sttp" %% "async-http-client-backend-future" % "1.1.3",
+  "com.softwaremill.sttp" %% "okhttp-backend" % "1.1.3",
+//  "com.typesafe.akka" %% "akka-http" % akkaHttpV,
   "org.apache.commons" % "commons-pool2" % "2.4.2",
   "com.typesafe.akka" %% "akka-actor" % akkaV,
   "com.fasterxml.jackson.core" % "jackson-databind" % "2.7.5",
