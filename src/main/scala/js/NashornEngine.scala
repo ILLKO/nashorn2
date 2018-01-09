@@ -15,7 +15,7 @@ class NashornEngine(val engine: ScriptEngine, val sc: ScriptContext) {
     print(s"Running $resource ")
     val time = System.nanoTime()
     val code = NashornEngine.readResource(resource)
-    val result = engine.eval(code, sc)
+    val result = engine.eval(code)
     val elapsed = (System.nanoTime() - time) / (1000 * 1000)
     println(s" done in $elapsed millis")
     result
@@ -29,14 +29,14 @@ class NashornEngine(val engine: ScriptEngine, val sc: ScriptContext) {
     val f = p.future
 
     val code = NashornEngine.readResource(resource)
-    engine.eval(code, sc)
+    engine.eval(code)
     println(s" done")
 
     f.onSuccess(handler)
   }
 
   def evalString(script: String): AnyRef = {
-    engine.eval(script, sc)
+    engine.eval(script)
   }
 }
 
@@ -48,22 +48,17 @@ object NashornEngine {
 
   val globalScheduledThreadPool = Executors.newScheduledThreadPool(20)
 
-  def init(polyfills: Boolean = false): NashornEngine = {
+  def init(): NashornEngine = {
 
     import javax.script.ScriptEngineManager
 
-    val manager = new ScriptEngineManager
+    val manager = new ScriptEngineManager(null)
     val engine: ScriptEngine = manager.getEngineByName("nashorn")
+    assert(engine != null, "could not get nashorn engine")
 
     val sc: SimpleScriptContext = initScriptContext(engine)
 
-    val ne = new NashornEngine(engine, sc)
-
-    if (polyfills) {
-      initPolyFills(ne)
-    }
-
-    ne
+    new NashornEngine(engine, sc)
   }
 
   val consoleLogInfo: Consumer[Object] = new Consumer[Object] {
@@ -78,10 +73,6 @@ object NashornEngine {
       println(t)
       JavascriptLogger.logger.error("{}", t)
     }
-  }
-
-  def initPolyFills(engine: NashornEngine): Unit = {
-
   }
 
   def initScriptContext(engine: ScriptEngine): SimpleScriptContext = {
