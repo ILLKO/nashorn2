@@ -33,73 +33,46 @@ trait StubServer extends BeforeAfterAll {
 }
 
 class FetchSpec extends Specification with StubServer {
+  val timeout = 1 second
+  val body = "Response Body"
+  val path = "/my/resource"
+  val httpOk = StatusCodes.OK
 
   "WireMock" should {
-    val timeout = 1 second
 
     "stub get request" in {
 
-      val path = "/my/resource"
-      stubFor(get(urlEqualTo(path))
-        .willReturn(
-          aResponse()
-            .withStatus(200)
-            .withBody("Response Body")))
+      stubResponse(path, httpOk.intValue, body)
 
       val future = fetch(url(path))
       val response = Await.result(future, timeout)
-      response.status === StatusCodes.OK
+      response.status === httpOk
 
       val bodyFuture = response.entity.toStrict(timeout).map(_.data.utf8String)
-      Await.result(bodyFuture, timeout) === "Response Body"
+      Await.result(bodyFuture, timeout) === body
     }
 
     "stub in js" in {
-
-      val path = "/my/resource"
-      stubFor(get(urlEqualTo(path))
-        .willReturn(
-          aResponse()
-            .withStatus(200)
-            .withBody("Response Body")))
+      stubResponse(path, httpOk.intValue, body)
 
       val js =
         s"""(function (context) {
-           |  'use strict';
-           |
-         |var cs = fetch("${url(path)}")
+           |  var cs = fetch("${url(path)}")
            |  return cs;
            |})(this);
        """.stripMargin
 
-      val ne = NashornEngine.init()
-      ne.evalResource("/fetch.js")
-      val cs = ne.evalString(js).asInstanceOf[CompletionStage[HttpResponse]]
+      val cs = evalJs(js)
 
-      val f = FutureConverters.toScala(cs)
-
-      //      obj.getClass === classOf[ScriptObjectMirror]
-
-      val response = Await.result(f, timeout)
-      response.status === StatusCodes.OK
-
-      val bodyFuture = response.entity.toStrict(timeout).map(_.data.utf8String)
-      Await.result(bodyFuture, timeout) === "Response Body"
+      checkResponse(cs, httpOk, body)
     }
 
     "stub in js withThen" in {
 
-      val path = "/my/resource"
-      stubFor(get(urlEqualTo(path))
-        .willReturn(
-          aResponse()
-            .withStatus(200)
-            .withBody("Response Body")))
+      stubResponse(path, httpOk.intValue, body)
 
       val js =
         s"""(function (context) {
-           |  'use strict';
-           |
            |var cs = fetch("${url(path)}").thenApply(function(response) {
            |  print("Got response")
            |  var status = response.status().value();
@@ -121,4 +94,27 @@ class FetchSpec extends Specification with StubServer {
     }
   }
 
+  private def stubResponse(path: String, code: Int, body: String) = {
+    stubFor(get(urlEqualTo(path))
+      .willReturn(
+        aResponse()
+          .withStatus(code)
+          .withBody(body)))
+  }
+
+  private def evalJs(js: String) = {
+    val ne = NashornEngine.init()
+    ne.evalResource("/fetch.js")
+    val cs = ne.evalString(js).asInstanceOf[CompletionStage[HttpResponse]]
+    cs
+  }
+
+  private def checkResponse(cs: CompletionStage[HttpResponse], httpOk: StatusCodes.Success, body: String) = {
+    val f = FutureConverters.toScala(cs)
+    val response = Await.result(f, timeout)
+    response.status === httpOk
+
+    val bodyFuture = response.entity.toStrict(timeout).map(_.data.utf8String)
+    Await.result(bodyFuture, timeout) === body
+  }
 }
