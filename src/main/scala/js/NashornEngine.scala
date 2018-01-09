@@ -4,6 +4,7 @@ import java.util.concurrent.Executors
 import java.util.function.Consumer
 import javax.script.{ScriptContext, ScriptEngine, SimpleScriptContext}
 
+import jdk.nashorn.api.scripting.JSObject
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.concurrent.Promise
@@ -38,6 +39,12 @@ class NashornEngine(val engine: ScriptEngine, val sc: ScriptContext) {
   def evalString(script: String): AnyRef = {
     engine.eval(script)
   }
+
+  def newObject(name: String): JSObject = {
+    val func = engine.get("Headers").asInstanceOf[JSObject]
+    func.newObject().asInstanceOf[JSObject]
+  }
+
 }
 
 object JavascriptLogger {
@@ -47,6 +54,8 @@ object JavascriptLogger {
 object NashornEngine {
 
   val globalScheduledThreadPool = Executors.newScheduledThreadPool(20)
+
+  val instance = init()
 
   def init(): NashornEngine = {
 

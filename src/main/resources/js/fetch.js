@@ -5,6 +5,40 @@
         return
     }
 
+  function normalizeName(name) {
+    if (typeof name !== 'string') {
+      name = String(name)
+    }
+    if (/[^a-z0-9\-#$%&'*+.\^_`|~]/i.test(name)) {
+      throw new TypeError('Invalid character in header field name')
+    }
+    return name.toLowerCase()
+  }
+
+  function normalizeValue(value) {
+    if (typeof value !== 'string') {
+      value = String(value)
+    }
+    return value
+  }
+
+  function iteratorFor(items) {
+    var iterator = {
+      next: function() {
+        var value = items.shift()
+        return {done: value === undefined, value: value}
+      }
+    }
+
+    if (support.iterable) {
+      iterator[Symbol.iterator] = function() {
+        return iterator
+      }
+    }
+
+    return iterator
+  }
+
   function Headers(headers) {
     this.map = {}
 
@@ -73,13 +107,35 @@
     return iteratorFor(items)
   }
 
+  function Request(input, options) {
+    options = options || {}
+
+    if (typeof input === 'string') {
+      this.url = input
+    } else {
+      this.url = input.url
+      if (!options.headers) {
+        this.headers = new Headers(input.headers)
+      }
+    }
+
+    if (options.headers || !this.headers) {
+      this.headers = new Headers(options.headers)
+    }
+  }
+
   self.Headers = Headers
+  self.Request = Request
 
   var FetchOnSttp = Packages.js.FetchOnSttp$.MODULE$;
 
-  self.fetch = function(url) {
+  self.fetch = function(input, init) {
         print("fetching");
-        return FetchOnSttp.fetch(url);
+
+      var request = new Request(input, init)
+      var headers = request.headers.map
+
+      return FetchOnSttp.fetch(request.url, headers);
   };
 
 })(typeof self !== 'undefined' ? self : this);

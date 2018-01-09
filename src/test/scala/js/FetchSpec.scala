@@ -49,26 +49,26 @@ class FetchSpec extends Specification with StubServer {
       checkResponse(cs, httpOk, body)
     }
 
-//    "response js code" in {
-//
-//      stubResponse(path, httpOk.intValue, body)
-//
-//      val js =
-//        s"""
-//           |fetch("${url(path)}").then(function(response) {
-//           |  return response.statusText();
-//           |})
-//           |""".stripMargin
-//
-//      val ne = NashornEngine.init()
-//      ne.evalResource("/js/fetch.js")
-//      val jcs = ne.evalString(js).asInstanceOf[JsCompletionStage[String]]
-//
-//      val f = FutureConverters.toScala(jcs.cs)
-//
-//      val response = Await.result(f, timeout)
-//      response === "OK"
-//    }
+    //    "response js code" in {
+    //
+    //      stubResponse(path, httpOk.intValue, body)
+    //
+    //      val js =
+    //        s"""
+    //           |fetch("${url(path)}").then(function(response) {
+    //           |  return response.statusText();
+    //           |})
+    //           |""".stripMargin
+    //
+    //      val ne = NashornEngine.init()
+    //      ne.evalResource("/js/fetch.js")
+    //      val jcs = ne.evalString(js).asInstanceOf[JsCompletionStage[String]]
+    //
+    //      val f = FutureConverters.toScala(jcs.cs)
+    //
+    //      val response = Await.result(f, timeout)
+    //      response === "OK"
+    //    }
 
     "response body text" in {
 
@@ -81,7 +81,7 @@ class FetchSpec extends Specification with StubServer {
            |})
        """.stripMargin
 
-      val ne = NashornEngine.init()
+      val ne = getEngine
       ne.evalResource("/js/fetch.js")
       val jcs = ne.evalString(js).asInstanceOf[JsCompletionStage[String]]
 
@@ -90,6 +90,34 @@ class FetchSpec extends Specification with StubServer {
       val response = Await.result(f, timeout)
       response === body
     }
+
+    "headers" in {
+
+      stubFor(get(urlEqualTo(path))
+        .withHeader("Accept", WireMock.equalTo("application/json"))
+        .willReturn(
+          aResponse()
+            .withStatus(httpOk.intValue)
+            .withHeader("Content-Type", "application/json")
+            .withBody("{}")))
+
+      val js =
+        s"""
+           |fetch("${url(path)}", { headers: new Headers({"Accept": "application/json"})}).then(function(response) {
+           |  return response.headers().get('content-type');
+           |})
+       """.stripMargin
+
+      val ne = getEngine
+      ne.evalResource("/js/fetch.js")
+      val jcs = ne.evalString(js).asInstanceOf[JsCompletionStage[String]]
+
+      val f = FutureConverters.toScala(jcs.cs)
+
+      val response = Await.result(f, timeout)
+      response === "application/json"
+    }
+
 
     "response json" in {
       val json =
@@ -105,7 +133,7 @@ class FetchSpec extends Specification with StubServer {
            |});
            |""".stripMargin
 
-      val ne = NashornEngine.init()
+      val ne = getEngine
       ne.evalResource("/js/fetch.js")
       val jcs = ne.evalString(js).asInstanceOf[JsCompletionStage[Integer]]
 
@@ -114,6 +142,10 @@ class FetchSpec extends Specification with StubServer {
       val response = Await.result(f, timeout)
       response === 43928588
     }
+  }
+
+  def getEngine: NashornEngine = {
+    NashornEngine.instance
   }
 
   private def stubResponse(path: String, code: Int, body: String) = {
@@ -125,7 +157,7 @@ class FetchSpec extends Specification with StubServer {
   }
 
   private def evalJs(js: String) = {
-    val ne = NashornEngine.init()
+    val ne = getEngine
     ne.evalResource("/js/fetch.js")
     ne.evalString(js).asInstanceOf[JsCompletionStage[JsResponse]]
   }
@@ -134,7 +166,7 @@ class FetchSpec extends Specification with StubServer {
     val f = FutureConverters.toScala(jcs.cs)
     val response = Await.result(f, timeout)
     response.status === statusCode.intValue
-//    response.statusText === statusCode.reason
+    //    response.statusText === statusCode.reason
     response.ok === statusCode.isSuccess()
 
     val bodyFuture = FutureConverters.toScala(response.text().cs)

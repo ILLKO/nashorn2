@@ -8,10 +8,11 @@ import com.softwaremill.sttp.Response
 
 class JsResponse(val response: Response[String]) {
 
-
   val status: Int = response.code
 //  val statusText: String =
   val ok: Boolean = response.isSuccess
+
+  val headers = NashornEngine.instance.newObject("Headers")
 
   def text(): JsCompletionStage[String] = {
     new JsCompletionStage(CompletableFuture.completedFuture(response.unsafeBody))
