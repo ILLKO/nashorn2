@@ -1,11 +1,12 @@
 package js
 
+import javax.script.Invocable
+
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration._
-import js.FetchOnAkka._
 import org.specs2.mutable.Specification
 import org.specs2.specification.BeforeAfterAll
 
@@ -51,7 +52,7 @@ class FetchSpec extends Specification with StubServer {
       checkResponse(cs, httpOk, body)
     }
 
-    "response js code withThen" in {
+    "response js code" in {
 
       stubResponse(path, httpOk.intValue, body)
 
@@ -74,7 +75,7 @@ class FetchSpec extends Specification with StubServer {
       response === "OK"
     }
 
-    "response body text withThen" in {
+    "response body text" in {
 
       stubResponse(path, httpOk.intValue, body)
 
@@ -97,6 +98,30 @@ class FetchSpec extends Specification with StubServer {
       response === body
     }
 
+    "response json" in {
+      val json =
+        """{"query":{"statistics":{"pages":43928588,"articles":5547529,"edits":928676946,"images":851937,"users":32631130,"activeusers":121876,"admins":1240,"jobs":42273}}}"""
+
+      stubResponse(path, httpOk.intValue, json)
+      val js =
+        s"""(function (context) {
+           |var cs = fetch("${url(path)}").then(function(response) {
+           |  return response.json();
+           |}).then(function(json) {
+           |  return json.query.statistics.pages;
+           |});
+           |return cs;
+           |})(this);             """.stripMargin
+
+      val ne = NashornEngine.init()
+      ne.evalResource("/fetch.js")
+      val jcs = ne.evalString(js).asInstanceOf[JsCompletionStage[Integer]]
+
+      val f = FutureConverters.toScala(jcs.cs)
+
+      val response = Await.result(f, timeout)
+      response === 43928588
+    }
   }
 
   private def stubResponse(path: String, code: Int, body: String) = {

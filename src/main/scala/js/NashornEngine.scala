@@ -9,7 +9,7 @@ import org.slf4j.{Logger, LoggerFactory}
 import scala.concurrent.Promise
 import scala.io.Source
 
-class NashornEngine(engine: ScriptEngine, val sc: ScriptContext) {
+class NashornEngine(val engine: ScriptEngine, val sc: ScriptContext) {
 
   def evalResource(resource: String): AnyRef = {
     print(s"Running $resource ")

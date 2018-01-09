@@ -20,6 +20,11 @@ class JsCompletionStage[T](val cs: CompletionStage[T]) extends CompletionStage[T
     new JsCompletionStage(cs.thenCompose(f))
   }
 
+  def `then`[U](fn: Function[T, U]): JsCompletionStage[U] = {
+    val f = new AsJavaFunction(fn andThen wrap)
+    new JsCompletionStage(cs.thenCompose(f))
+  }
+
   override def runAfterBothAsync(other: CompletionStage[_], action: Runnable) = ???
 
   override def runAfterBothAsync(other: CompletionStage[_], action: Runnable, executor: Executor) = ???
