@@ -30,6 +30,9 @@ trait StubServer extends BeforeAfterAll {
 }
 
 class FetchSpec extends Specification with StubServer {
+
+  sequential
+
   val timeout = 1 second
   val body = "Response Body"
   val path = "/my/resource"
@@ -41,11 +44,7 @@ class FetchSpec extends Specification with StubServer {
       stubResponse(path, httpOk.intValue, body)
 
       val js =
-        s"""(function (context) {
-           |  var cs = fetch("${url(path)}")
-           |  return cs;
-           |})(this);
-       """.stripMargin
+        s"""fetch("${url(path)}");"""
 
       val cs = evalJs(js)
 
@@ -57,13 +56,11 @@ class FetchSpec extends Specification with StubServer {
       stubResponse(path, httpOk.intValue, body)
 
       val js =
-        s"""(function (context) {
-           |var cs = fetch("${url(path)}").then(function(response) {
+        s"""
+           |fetch("${url(path)}").then(function(response) {
            |  return response.statusText();
-           |});
-           |return cs;
-           |})(this);
-       """.stripMargin
+           |})
+           |""".stripMargin
 
       val ne = NashornEngine.init()
       ne.evalResource("/fetch.js")
@@ -80,12 +77,10 @@ class FetchSpec extends Specification with StubServer {
       stubResponse(path, httpOk.intValue, body)
 
       val js =
-        s"""(function (context) {
-           |var cs = fetch("${url(path)}").then(function(response) {
+        s"""
+           |fetch("${url(path)}").then(function(response) {
            |  return response.text();
-           |});
-           |return cs;
-           |})(this);
+           |})
        """.stripMargin
 
       val ne = NashornEngine.init()
@@ -104,14 +99,13 @@ class FetchSpec extends Specification with StubServer {
 
       stubResponse(path, httpOk.intValue, json)
       val js =
-        s"""(function (context) {
-           |var cs = fetch("${url(path)}").then(function(response) {
+        s"""
+           |fetch("${url(path)}").then(function(response) {
            |  return response.json();
            |}).then(function(json) {
            |  return json.query.statistics.pages;
            |});
-           |return cs;
-           |})(this);             """.stripMargin
+           |""".stripMargin
 
       val ne = NashornEngine.init()
       ne.evalResource("/fetch.js")
