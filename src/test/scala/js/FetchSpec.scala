@@ -1,20 +1,15 @@
 package js
 
-import java.util.concurrent.CompletionStage
-
-import akka.http.scaladsl.model.HttpResponse
-import org.specs2.specification.BeforeAfterAll
-
-import scala.compat.java8.FutureConverters
-import scala.concurrent.Await
-import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration._
-import js.FetchOnAkka._
 import org.specs2.mutable.Specification
+import org.specs2.specification.BeforeAfterAll
 
+import scala.compat.java8.FutureConverters
+import scala.concurrent.Await
 import scala.concurrent.duration._
 
 trait StubServer extends BeforeAfterAll {
@@ -34,91 +29,115 @@ trait StubServer extends BeforeAfterAll {
 
 class FetchSpec extends Specification with StubServer {
 
+  sequential
+
+  val timeout = 1 second
+  val body = "Response Body"
+  val path = "/my/resource"
+  val httpOk = StatusCodes.OK
+
   "WireMock" should {
-    val timeout = 1 second
-
-    "stub get request" in {
-
-      val path = "/my/resource"
-      stubFor(get(urlEqualTo(path))
-        .willReturn(
-          aResponse()
-            .withStatus(200)
-            .withBody("Response Body")))
-
-      val future = fetch(url(path))
-      val response = Await.result(future, timeout)
-      response.status === StatusCodes.OK
-
-      val bodyFuture = response.entity.toStrict(timeout).map(_.data.utf8String)
-      Await.result(bodyFuture, timeout) === "Response Body"
-    }
 
     "stub in js" in {
-
-      val path = "/my/resource"
-      stubFor(get(urlEqualTo(path))
-        .willReturn(
-          aResponse()
-            .withStatus(200)
-            .withBody("Response Body")))
+      stubResponse(path, httpOk.intValue, body)
 
       val js =
-        s"""(function (context) {
-           |  'use strict';
-           |
-         |var cs = fetch("${url(path)}")
-           |  return cs;
-           |})(this);
-       """.stripMargin
+        s"""fetch("${url(path)}");"""
 
-      val ne = NashornEngine.init()
-      ne.evalResource("/fetch.js")
-      val cs = ne.evalString(js).asInstanceOf[CompletionStage[HttpResponse]]
+      val cs = evalJs(js)
 
-      val f = FutureConverters.toScala(cs)
-
-      //      obj.getClass === classOf[ScriptObjectMirror]
-
-      val response = Await.result(f, timeout)
-      response.status === StatusCodes.OK
-
-      val bodyFuture = response.entity.toStrict(timeout).map(_.data.utf8String)
-      Await.result(bodyFuture, timeout) === "Response Body"
+      checkResponse(cs, httpOk, body)
     }
 
-    "stub in js withThen" in {
+//    "response js code" in {
+//
+//      stubResponse(path, httpOk.intValue, body)
+//
+//      val js =
+//        s"""
+//           |fetch("${url(path)}").then(function(response) {
+//           |  return response.statusText();
+//           |})
+//           |""".stripMargin
+//
+//      val ne = NashornEngine.init()
+//      ne.evalResource("/js/fetch.js")
+//      val jcs = ne.evalString(js).asInstanceOf[JsCompletionStage[String]]
+//
+//      val f = FutureConverters.toScala(jcs.cs)
+//
+//      val response = Await.result(f, timeout)
+//      response === "OK"
+//    }
 
-      val path = "/my/resource"
-      stubFor(get(urlEqualTo(path))
-        .willReturn(
-          aResponse()
-            .withStatus(200)
-            .withBody("Response Body")))
+    "response body text" in {
+
+      stubResponse(path, httpOk.intValue, body)
 
       val js =
-        s"""(function (context) {
-           |  'use strict';
-           |
-           |var cs = fetch("${url(path)}").thenApply(function(response) {
-           |  print("Got response")
-           |  var status = response.status().value();
-           |  print(status);
-           |  return status;
-           |});
-           |return cs;
-           |})(this);
+        s"""
+           |fetch("${url(path)}").then(function(response) {
+           |  return response.text();
+           |})
        """.stripMargin
 
       val ne = NashornEngine.init()
-      ne.evalResource("/fetch.js")
-      val cs = ne.evalString(js).asInstanceOf[CompletionStage[String]]
+      ne.evalResource("/js/fetch.js")
+      val jcs = ne.evalString(js).asInstanceOf[JsCompletionStage[String]]
 
-      val f = FutureConverters.toScala(cs)
+      val f = FutureConverters.toScala(jcs.cs)
 
       val response = Await.result(f, timeout)
-      response === "200 OK"
+      response === body
+    }
+
+    "response json" in {
+      val json =
+        """{"query":{"statistics":{"pages":43928588,"articles":5547529,"edits":928676946,"images":851937,"users":32631130,"activeusers":121876,"admins":1240,"jobs":42273}}}"""
+
+      stubResponse(path, httpOk.intValue, json)
+      val js =
+        s"""
+           |fetch("${url(path)}").then(function(response) {
+           |  return response.json();
+           |}).then(function(json) {
+           |  return json.query.statistics.pages;
+           |});
+           |""".stripMargin
+
+      val ne = NashornEngine.init()
+      ne.evalResource("/js/fetch.js")
+      val jcs = ne.evalString(js).asInstanceOf[JsCompletionStage[Integer]]
+
+      val f = FutureConverters.toScala(jcs.cs)
+
+      val response = Await.result(f, timeout)
+      response === 43928588
     }
   }
 
+  private def stubResponse(path: String, code: Int, body: String) = {
+    stubFor(get(urlEqualTo(path))
+      .willReturn(
+        aResponse()
+          .withStatus(code)
+          .withBody(body)))
+  }
+
+  private def evalJs(js: String) = {
+    val ne = NashornEngine.init()
+    ne.evalResource("/js/fetch.js")
+    ne.evalString(js).asInstanceOf[JsCompletionStage[JsResponse]]
+  }
+
+  private def checkResponse(jcs: JsCompletionStage[JsResponse], statusCode: StatusCode, body: String) = {
+    val f = FutureConverters.toScala(jcs.cs)
+    val response = Await.result(f, timeout)
+    response.status === statusCode.intValue
+//    response.statusText === statusCode.reason
+    response.ok === statusCode.isSuccess()
+
+    val bodyFuture = FutureConverters.toScala(response.text().cs)
+    Await.result(bodyFuture, timeout) === body
+  }
 }
