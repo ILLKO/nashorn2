@@ -22,14 +22,21 @@ object FetchOnSttp {
     CONNECT,
     TRACE).map { x => x.m -> x }.toMap
 
-  def fetch(method: String, url: String, headers: java.util.Map[String, String] = new java.util.HashMap): JsCompletionStage[JsResponse] = {
+  def fetch(method: String, url: String,
+            headers: java.util.Map[String, String] = new java.util.HashMap,
+            requestObj: java.util.Map[String, AnyRef]): JsCompletionStage[JsResponse] = {
     val request = sttp
       .copy[Id, String, Nothing](uri = uri"$url", method = methodsMaps(method))
       .headers(headers.asScala.toMap)
 
+    val withBody = Option(requestObj.get("body")).fold(request) {
+      case bodyString: String => request.body(bodyString)
+      case _ => request
+    }
+
     implicit val sttpBackend = AkkaHttpBackend()
 
-    val f = request.send().map(r => new JsResponse(r))
+    val f = withBody.send().map(r => new JsResponse(r))
     new JsCompletionStage(FutureConverters.toJava(f))
   }
 }

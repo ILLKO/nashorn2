@@ -127,6 +127,7 @@
 
   function Request(input, options) {
     options = options || {}
+    this.body = options.body
 
     if (typeof input === 'string') {
       this.url = input
@@ -155,7 +156,7 @@
       var request = new Request(input, init)
       var headers = request.headers.map
 
-      return FetchOnSttp.fetch(request.method, request.url, headers);
+      return FetchOnSttp.fetch(request.method, request.url, headers, request);
   };
 
 })(typeof self !== 'undefined' ? self : this);

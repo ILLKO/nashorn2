@@ -118,6 +118,21 @@ class FetchSpec extends Specification with StubServer {
       response === "application/json"
     }
 
+    "post request body string" in {
+      stubFor(post(urlEqualTo(path))
+        .withRequestBody(WireMock.equalTo("request body"))
+        .willReturn(
+          aResponse()
+            .withStatus(httpOk.intValue)
+            .withBody("response body")))
+
+
+      val js = s"""fetch("${url(path)}", { method: "POST", body: "request body"})"""
+
+      val cs = evalJs(js)
+
+      checkResponse(cs, httpOk, "response body")
+    }
 
     "response json" in {
       val json =
