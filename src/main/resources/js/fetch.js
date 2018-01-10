@@ -118,6 +118,13 @@
     return iteratorFor(items)
   }
 
+  var methods = ['DELETE', 'GET', 'HEAD', 'OPTIONS', 'POST', 'PUT']
+
+  function normalizeMethod(method) {
+    var upcased = method.toUpperCase()
+    return (methods.indexOf(upcased) > -1) ? upcased : method
+  }
+
   function Request(input, options) {
     options = options || {}
 
@@ -128,11 +135,13 @@
       if (!options.headers) {
         this.headers = new Headers(input.headers)
       }
+      this.method = input.method
     }
 
     if (options.headers || !this.headers) {
       this.headers = new Headers(options.headers)
     }
+    this.method = normalizeMethod(options.method || this.method || 'GET')
   }
 
   self.Headers = Headers
@@ -146,7 +155,7 @@
       var request = new Request(input, init)
       var headers = request.headers.map
 
-      return FetchOnSttp.fetch(request.url, headers);
+      return FetchOnSttp.fetch(request.method, request.url, headers);
   };
 
 })(typeof self !== 'undefined' ? self : this);

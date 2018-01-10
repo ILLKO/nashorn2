@@ -9,8 +9,23 @@ import scala.collection.JavaConverters._
 
 object FetchOnSttp {
 
-  def fetch(url: String, headers: java.util.Map[String, String] = new java.util.HashMap): JsCompletionStage[JsResponse] = {
-    val request = sttp.get(uri"$url").headers(headers.asScala.toMap)
+  import com.softwaremill.sttp.Method._
+
+  val methodsMaps: Map[String, Method] = Seq(
+    GET,
+    HEAD,
+    POST,
+    PUT,
+    DELETE,
+    OPTIONS,
+    PATCH,
+    CONNECT,
+    TRACE).map { x => x.m -> x }.toMap
+
+  def fetch(method: String, url: String, headers: java.util.Map[String, String] = new java.util.HashMap): JsCompletionStage[JsResponse] = {
+    val request = sttp
+      .copy[Id, String, Nothing](uri = uri"$url", method = methodsMaps(method))
+      .headers(headers.asScala.toMap)
 
     implicit val sttpBackend = AkkaHttpBackend()
 
