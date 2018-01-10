@@ -40,9 +40,9 @@ class NashornEngine(val engine: ScriptEngine, val sc: ScriptContext) {
     engine.eval(script)
   }
 
-  def newObject(name: String): JSObject = {
-    val func = engine.get("Headers").asInstanceOf[JSObject]
-    func.newObject().asInstanceOf[JSObject]
+  def newObject(name: String, param: Object): JSObject = {
+    val func = engine.get(name).asInstanceOf[JSObject]
+    func.newObject(param).asInstanceOf[JSObject]
   }
 
 }

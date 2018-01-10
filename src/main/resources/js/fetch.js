@@ -50,6 +50,8 @@
       headers.forEach(function(header) {
         this.append(header[0], header[1])
       }, this)
+    } else if (headers instanceof java.util.Map) {
+        this.fromJavaMap(headers);
     } else if (headers) {
       Object.getOwnPropertyNames(headers).forEach(function(name) {
         this.append(name, headers[name])
@@ -62,6 +64,15 @@
     value = normalizeValue(value)
     var oldValue = this.map[name]
     this.map[name] = oldValue ? oldValue+','+value : value
+  }
+
+  Headers.prototype.fromJavaMap = function(javaMap) {
+    var keys = javaMap.keySet().iterator();
+    while (keys.hasNext()) {
+       var key = keys.next()
+       var value = javaMap.get(key);
+       this.append(key, value);
+    }
   }
 
   Headers.prototype['delete'] = function(name) {
