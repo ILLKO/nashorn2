@@ -49,26 +49,26 @@ class FetchSpec extends Specification with StubServer {
       checkResponse(cs, httpOk, body)
     }
 
-//    "response js code" in {
-//
-//      stubResponse(path, httpOk.intValue, body)
-//
-//      val js =
-//        s"""
-//           |fetch("${url(path)}").then(function(response) {
-//           |  return response.statusText();
-//           |})
-//           |""".stripMargin
-//
-//      val ne = NashornEngine.init()
-//      ne.evalResource("/js/fetch.js")
-//      val jcs = ne.evalString(js).asInstanceOf[JsCompletionStage[String]]
-//
-//      val f = FutureConverters.toScala(jcs.cs)
-//
-//      val response = Await.result(f, timeout)
-//      response === "OK"
-//    }
+    "response js code" in {
+
+      stubResponse(path, httpOk.intValue, body)
+
+      val js =
+        s"""
+           |fetch("${url(path)}").then(function(response) {
+           |  return response.statusText();
+           |})
+           |""".stripMargin
+
+      val ne = NashornEngine.init()
+      ne.evalResource("/js/fetch.js")
+      val jcs = ne.evalString(js).asInstanceOf[JsCompletionStage[String]]
+
+      val f = FutureConverters.toScala(jcs.cs)
+
+      val response = Await.result(f, timeout)
+      response === "OK"
+    }
 
     "response body text" in {
 

@@ -8,9 +8,8 @@ import com.softwaremill.sttp.Response
 
 class JsResponse(val response: Response[String]) {
 
-
   val status: Int = response.code
-//  val statusText: String =
+  val statusText: String = response.statusText
   val ok: Boolean = response.isSuccess
 
   def text(): JsCompletionStage[String] = {
