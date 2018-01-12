@@ -23,4 +23,8 @@ class JsCompletionStage[T](val cs: CompletionStage[T]) {
     val f = new AsJavaFunction(fn andThen wrap)
     new JsCompletionStage(cs.thenCompose(f))
   }
+
+  def `catch`(fn: function.Function[Throwable, T]): JsCompletionStage[CompletionStage[T]] = {
+    new JsCompletionStage(cs.exceptionally(fn))
+  }
 }
