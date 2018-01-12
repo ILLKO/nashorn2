@@ -5,13 +5,15 @@ import java.util.concurrent.CompletableFuture
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.softwaremill.sttp.Response
+import scala.collection.JavaConverters._
 
 class JsResponse(val response: Response[String]) {
-
 
   val status: Int = response.code
 //  val statusText: String =
   val ok: Boolean = response.isSuccess
+
+  val headers = NashornEngine.instance.newObject("Headers", response.headers.toMap.asJava)
 
   def text(): JsCompletionStage[String] = {
     new JsCompletionStage(CompletableFuture.completedFuture(response.unsafeBody))
