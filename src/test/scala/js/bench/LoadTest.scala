@@ -4,6 +4,8 @@ import akka.actor.ActorSystem
 import com.google.common.util.concurrent.AtomicLongMap
 import js.bench._
 import js.{Fetch, FetchOnSttp, NashornEngine}
+import task.LoadTest.getThrottlingService
+import task.spray.HttpServerSpray
 
 import scala.compat.java8.FutureConverters
 import scala.collection.JavaConverters._
@@ -104,6 +106,15 @@ object LoadTest {
     NashornEngine.instance
   }
 
+  def getThrottlingService(maybeRps: Option[Int], users: Int)(implicit timer: TimeService): ThrottlingService = {
+    maybeRps.map { rps =>
+      val slaMap = (1 to users).map { i => tokenByIndex(i) -> Sla(i.toString, rps) }.toMap
+      val slaService = new MapBasedSlaService(slaMap)
+
+      new ThrottlingServiceImpl(slaService, rps)
+    }.getOrElse(UnlimitedThrottlingService)
+  }
+
   def main(args: Array[String]): Unit = {
     if (args.length == 0) {
       println("Usage: LoadTest users [serverRps] [clientRps] [seconds]")
@@ -113,11 +124,30 @@ object LoadTest {
 
     val cfg = argsToCfg(args)
 
-    val server = new HttpServerWireMock("/service", "x" * 600 * 1000)
     val client = FetchOnSttp
     val ne = getEngine
     ne.evalResource("/js/fetch.js")
 
+    runSpray(client, cfg)
+  }
+
+  def runSpray(client: Fetch[_], cfg: BenchmarkConfig) = {
+    val server = new HttpServerSpray()
+    import server.system.dispatcher
+    implicit val timer = new TimerImpl(server.system)
+
+    val ts = getThrottlingService(cfg.serverRps, cfg.users)
+
+    server.start(new StringService(600 * 1000), ts, server.system.dispatcher).map { _ =>
+      new LoadTest(client, cfg).bench()
+      terminate(server.system)
+    }.failed.map { x =>
+      println("Server start error:" + x)
+    }
+  }
+
+  def runWireMock(client: Fetch[_], cfg: BenchmarkConfig) = {
+    val server = new HttpServerWireMock("/service", "x" * 600 * 1000)
     server.start()
 
     new LoadTest(client, cfg).bench()

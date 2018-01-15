@@ -1,14 +1,12 @@
 package js
 
 import akka.actor.ActorSystem
-import akka.http.javadsl.Http
-import akka.http.javadsl.model.HttpRequest
 import com.softwaremill.sttp._
 import com.softwaremill.sttp.akkahttp.AkkaHttpBackend
 
+import scala.collection.JavaConverters._
 import scala.compat.java8.FutureConverters
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.collection.JavaConverters._
 
 object FetchOnSttp extends Fetch[JsResponseSttp] {
 
