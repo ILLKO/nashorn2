@@ -10,7 +10,7 @@ import scala.collection.JavaConverters._
 class JsResponse(val response: Response[String]) {
 
   val status: Int = response.code
-//  val statusText: String =
+  val statusText: String = response.statusText
   val ok: Boolean = response.isSuccess
 
   val headers = NashornEngine.instance.newObject("Headers", response.headers.toMap.asJava)

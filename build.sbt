@@ -5,7 +5,7 @@ version := "0.1"
 scalaVersion := "2.11.11"
 
 val akkaV = "2.4.20"
-val sttpV = "1.1.3"
+val sttpV = "1.1.4"
 //val akkaHttpV = "10.0.11"
 val specsV = "3.8.4"
 val slf4jV = "1.7.25"
