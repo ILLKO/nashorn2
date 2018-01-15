@@ -22,8 +22,11 @@ libraryDependencies ++= Seq(
   "org.slf4j" % "slf4j-api" % slf4jV,
   "org.slf4j" % "slf4j-simple" % slf4jV,
   "org.specs2" %% "specs2-core" % specsV % Test,
-  "com.github.tomakehurst" % "wiremock" % "2.13.0" % Test
-//  "net.databinder.dispatch" %% "dispatch-core" % "0.11.0" % "test",
+  "com.github.tomakehurst" % "wiremock" % "2.13.0" % Test,
+  "com.google.guava" % "guava" % "21.0" % Test,
+  "com.github.blemale" %% "scaffeine" % "2.1.0"
+
+  //  "net.databinder.dispatch" %% "dispatch-core" % "0.11.0" % "test",
 //  "org.apache.httpcomponents" % "httpclient" % "4.5.2",
 //  "org.apache.httpcomponents" % "httpasyncclient" % "4.1.2"
 )

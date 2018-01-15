@@ -1,22 +1,31 @@
 package js
 
 import java.util
-import java.util.concurrent.CompletableFuture
 
+import akka.http.scaladsl.model.{HttpResponse, StatusCodes}
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.softwaremill.sttp.Response
+import js.FetchOnAkka.system
+
 import scala.collection.JavaConverters._
+import scala.compat.java8.FutureConverters
+import scala.concurrent.duration._
 
-class JsResponse(val response: Response[String]) {
+class JsResponse(val response: HttpResponse) {
 
-  val status: Int = response.code
-  val statusText: String = response.statusText
-  val ok: Boolean = response.isSuccess
+  implicit val materializer = FetchOnAkka.materializer
+  implicit val executionContext = system.dispatcher
 
-  val headers = NashornEngine.instance.newObject("Headers", response.headers.toMap.asJava)
+  val timeout = 21 second
+
+  val status: Int = response.status.intValue()
+  val statusText: String = response.status.reason()
+  val ok: Boolean = response.status == StatusCodes.OK
+
+  val headers = NashornEngine.instance.newObject("Headers", /*response.headers.toMap*/ Map.empty.asJava)
 
   def text(): JsCompletionStage[String] = {
-    new JsCompletionStage(CompletableFuture.completedFuture(response.unsafeBody))
+    val f = response.entity.toStrict(timeout).map(_.data.utf8String)
+    new JsCompletionStage(FutureConverters.toJava(f))
   }
 
   def json(): JsCompletionStage[util.HashMap[_, _]] = {
