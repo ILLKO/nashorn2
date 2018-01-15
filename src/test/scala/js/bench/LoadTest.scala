@@ -13,7 +13,7 @@ case class BenchmarkConfig(users: Int, serverRps: Option[Int], clientRps: Option
   override def toString = s"users: $users, serverRps: $serverRps, clientRps: $clientRps, seconds: $seconds"
 }
 
-class LoadTest(client: Fetch, cfg: BenchmarkConfig) {
+class LoadTest(client: Fetch[_], cfg: BenchmarkConfig) {
 
   implicit val timer = new TimerImpl(client.system)
 
@@ -37,7 +37,10 @@ class LoadTest(client: Fetch, cfg: BenchmarkConfig) {
       val jcs = client.fetch("GET", "http://localhost:8080/service")
       FutureConverters.toScala(jcs.cs).map { response =>
         counts.incrementAndGet(token)
-      }.failed.map { _ => failures.incrementAndGet(token) }
+      }.failed.map { f =>
+        println(f)
+        failures.incrementAndGet(token)
+      }
     }
 
     val batchSize = ratePerInterval.getOrElse(20)

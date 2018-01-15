@@ -1,35 +1,39 @@
 package js
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.Http
-import akka.http.scaladsl.model._
+import akka.http.javadsl.Http
+import akka.http.javadsl.model.HttpRequest
 import akka.stream.ActorMaterializer
 
-import scala.compat.java8.FutureConverters
+trait Fetch[T <: JsResponse] {
 
-object FetchOnAkka {
+  val system: ActorSystem
 
-  implicit val system = ActorSystem()
+  def fetch(method: String, url: String,
+            headers: java.util.Map[String, String] = new java.util.HashMap,
+            requestObj: java.util.Map[String, AnyRef] = new java.util.HashMap): JsCompletionStage[T]
+}
+
+object FetchOnAkka extends Fetch[JsResponseAkka] {
+
+  implicit val system = ActorSystem("client")
   implicit val materializer = ActorMaterializer()
   // needed for the future flatMap/onComplete in the end
   implicit val executionContext = system.dispatcher
 
-  def fetch(url: String/*, options: Map[String, AnyRef] = Map.empty*/): JsCompletionStage[JsResponse] = {
+  override def fetch(method: String, url: String,
+                     headers: java.util.Map[String, String] = new java.util.HashMap,
+                     requestObj: java.util.Map[String, AnyRef]): JsCompletionStage[JsResponseAkka] = {
+//    val request = sttp
+//      .copy[Id, String, Nothing](uri = uri"$url", method = methodsMaps(method))
+//      .headers(headers.asScala.toMap)
+//
+//    val withBody = Option(requestObj.get("body")).fold(request) {
+//      case bodyString: String => request.body(bodyString)
+//      case _ => request
+//    }
 
-    //    val options: Map[String, AnyRef] = Map.empty
-    //    val method = options.getOrElse("method", "GET")
-    //    val headers = options.getOrElse("headers", Map.empty)
-    //    val body = options.get("body")
-
-    val f = Http().singleRequest(HttpRequest(uri = url)).map(r => new JsResponse(r))
-    new JsCompletionStage(FutureConverters.toJava(f))
-  }
-
-  //  def convertHeaders() = {
-  //
-  //  }
-
-  def main(args: Array[String]): Unit = {
-    fetch("http://akka.io")
+    val cs = Http.get(system).singleRequest(HttpRequest.create("http://akka.io"))
+    new JsCompletionStage(cs).`then`(r => new JsResponseAkka(r))
   }
 }
