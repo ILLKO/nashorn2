@@ -33,7 +33,7 @@ object FetchOnAkka extends Fetch[JsResponseAkka] {
 //      case _ => request
 //    }
 
-    val cs = Http.get(system).singleRequest(HttpRequest.create("http://akka.io"))
+    val cs = Http.get(system).singleRequest(HttpRequest.create(url))
     new JsCompletionStage(cs).`then`(r => new JsResponseAkka(r))
   }
 }

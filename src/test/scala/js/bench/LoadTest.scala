@@ -3,7 +3,7 @@ package task
 import akka.actor.ActorSystem
 import com.google.common.util.concurrent.AtomicLongMap
 import js.bench._
-import js.{Fetch, FetchOnSttp, NashornEngine}
+import js.{Fetch, FetchOnAkka, FetchOnSttp, NashornEngine}
 import task.LoadTest.getThrottlingService
 import task.spray.HttpServerSpray
 
