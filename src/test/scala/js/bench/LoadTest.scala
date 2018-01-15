@@ -40,7 +40,7 @@ class LoadTest(client: Fetch[_], cfg: BenchmarkConfig) {
       FutureConverters.toScala(jcs.cs).map { response =>
         counts.incrementAndGet(token)
       }.failed.map { f =>
-        println(f)
+       // println(f)
         failures.incrementAndGet(token)
       }
     }
