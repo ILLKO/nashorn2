@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.softwaremill.sttp.Response
 import scala.collection.JavaConverters._
 
-class JsResponse(val response: Response[String]) {
+class JsResponseSttp(val response: Response[String]) extends JsResponse {
 
   val status: Int = response.code
   val statusText: String = response.statusText

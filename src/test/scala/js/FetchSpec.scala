@@ -174,10 +174,10 @@ class FetchSpec extends Specification with StubServer {
   private def evalJs(js: String) = {
     val ne = getEngine
     ne.evalResource("/js/fetch.js")
-    ne.evalString(js).asInstanceOf[JsCompletionStage[JsResponse]]
+    ne.evalString(js).asInstanceOf[JsCompletionStage[JsResponseAkka]]
   }
 
-  private def checkResponse(jcs: JsCompletionStage[JsResponse], statusCode: StatusCode, body: String) = {
+  private def checkResponse(jcs: JsCompletionStage[JsResponseAkka], statusCode: StatusCode, body: String) = {
     val f = FutureConverters.toScala(jcs.cs)
     val response = Await.result(f, timeout)
     response.status === statusCode.intValue
