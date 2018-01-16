@@ -1,9 +1,11 @@
 package task
 
+import java.util.concurrent.atomic.AtomicLong
+
 import akka.actor.ActorSystem
 import com.google.common.util.concurrent.AtomicLongMap
 import js.bench._
-import js.{Fetch, FetchOnAkka, FetchOnSttp, NashornEngine}
+import js._
 import task.LoadTest.getThrottlingService
 import task.spray.HttpServerSpray
 
@@ -15,7 +17,7 @@ case class BenchmarkConfig(users: Int, serverRps: Option[Int], clientRps: Option
   override def toString = s"users: $users, serverRps: $serverRps, clientRps: $clientRps, seconds: $seconds"
 }
 
-class LoadTest(client: Fetch[_], cfg: BenchmarkConfig) {
+class LoadTest[T <: JsResponse](client: Fetch[T], cfg: BenchmarkConfig) {
 
   implicit val timer = new TimerImpl(client.system)
 
@@ -28,6 +30,7 @@ class LoadTest(client: Fetch[_], cfg: BenchmarkConfig) {
   def countMap = AtomicLongMap.create[String]()
 
   val counts :: rejections :: failures :: Nil = List.fill(3)(countMap)
+  val bytes = new AtomicLong(0)
 
   @volatile var start = timer.now
 
@@ -36,11 +39,12 @@ class LoadTest(client: Fetch[_], cfg: BenchmarkConfig) {
     println(cfg)
 
     def callRest(token: String) = {
-      val jcs = client.fetch("GET", "http://localhost:8080/service")
+      val jcs = client.fetch("GET", "http://localhost:8080/service").`then`(r => r.text()).asInstanceOf[JsCompletionStage[String]]
       FutureConverters.toScala(jcs.cs).map { response =>
+        bytes.addAndGet(response.length * 2)
         counts.incrementAndGet(token)
       }.failed.map { f =>
-       // println(f)
+        // println(f)
         failures.incrementAndGet(token)
       }
     }
@@ -124,14 +128,14 @@ object LoadTest {
 
     val cfg = argsToCfg(args)
 
-    val client = FetchOnSttp
+    val client = FetchOnAkka
     val ne = getEngine
     ne.evalResource("/js/fetch.js")
 
     runSpray(client, cfg)
   }
 
-  def runSpray(client: Fetch[_], cfg: BenchmarkConfig) = {
+  def runSpray[T <: JsResponse](client: Fetch[T], cfg: BenchmarkConfig) = {
     val server = new HttpServerSpray()
     import server.system.dispatcher
     implicit val timer = new TimerImpl(server.system)
@@ -146,7 +150,7 @@ object LoadTest {
     }
   }
 
-  def runWireMock(client: Fetch[_], cfg: BenchmarkConfig) = {
+  def runWireMock[T <: JsResponse](client: Fetch[T], cfg: BenchmarkConfig) = {
     val server = new HttpServerWireMock("/service", "x" * 600 * 1000)
     server.start()
 

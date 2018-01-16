@@ -9,7 +9,7 @@ class JsCompletionStage[T](val cs: CompletionStage[T]) {
 
   def wrap[U](r: U): CompletionStage[U] = {
     r match {
-      case jsc: JsCompletionStage[U] => jsc.cs
+      case jsc: JsCompletionStage[_] => jsc.cs.asInstanceOf[CompletionStage[U]]
       case _ => CompletableFuture.completedFuture(r)
     }
   }
