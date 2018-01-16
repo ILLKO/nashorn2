@@ -31,6 +31,10 @@ libraryDependencies ++= Seq(
   "com.google.guava" % "guava" % "21.0" % Test,
   "com.github.blemale" %% "scaffeine" % "2.1.0"
 
+//  "io.gatling" %% "gatling-core" % "2.3.0",
+//  "io.gatling" %% "gatling-http" % "2.3.0",
+//  "io.gatling" %% "gatling-app" % "2.3.0"
+
   //  "net.databinder.dispatch" %% "dispatch-core" % "0.11.0" % "test",
 //  "org.apache.httpcomponents" % "httpclient" % "4.5.2",
 //  "org.apache.httpcomponents" % "httpasyncclient" % "4.1.2"

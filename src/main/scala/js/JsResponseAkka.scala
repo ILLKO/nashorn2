@@ -9,6 +9,12 @@ import scala.concurrent.duration._
 
 trait JsResponse {
 
+  def status: Int
+  def statusText: String
+  def ok: Boolean
+
+  def text(): JsCompletionStage[String]
+
 }
 
 class JsResponseAkka(val response: HttpResponse) extends JsResponse {
@@ -31,6 +37,7 @@ class JsResponseAkka(val response: HttpResponse) extends JsResponse {
 
   def json(): JsCompletionStage[util.HashMap[_, _]] = {
     def parse(s: String) = new ObjectMapper().readValue(s, classOf[util.HashMap[_, _]])
+
     text().`then`(parse _)
   }
 }
