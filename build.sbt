@@ -29,7 +29,9 @@ libraryDependencies ++= Seq(
   "org.specs2" %% "specs2-core" % specsV % Test,
   "com.github.tomakehurst" % "wiremock" % "2.13.0" % Test,
   "com.google.guava" % "guava" % "21.0" % Test,
-  "com.github.blemale" %% "scaffeine" % "2.1.0"
+  "com.github.blemale" %% "scaffeine" % "2.1.0" % Test,
+
+    "com.storm-enroute" %% "scalameter" % "0.9" % Test
 
 //  "io.gatling" %% "gatling-core" % "2.3.0",
 //  "io.gatling" %% "gatling-http" % "2.3.0",

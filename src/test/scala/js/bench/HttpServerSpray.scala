@@ -1,7 +1,5 @@
 package task.spray
 
-import java.util.concurrent.Executors
-
 import akka.actor.ActorSystem
 import akka.util.Timeout
 import js.bench._
@@ -10,7 +8,7 @@ import spray.http.StatusCodes._
 import spray.http._
 import spray.routing._
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 

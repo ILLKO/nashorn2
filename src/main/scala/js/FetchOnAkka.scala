@@ -24,15 +24,6 @@ object FetchOnAkka extends Fetch[JsResponseAkka] {
   override def fetch(method: String, url: String,
                      headers: java.util.Map[String, String] = new java.util.HashMap,
                      requestObj: java.util.Map[String, AnyRef]): JsCompletionStage[JsResponseAkka] = {
-//    val request = sttp
-//      .copy[Id, String, Nothing](uri = uri"$url", method = methodsMaps(method))
-//      .headers(headers.asScala.toMap)
-//
-//    val withBody = Option(requestObj.get("body")).fold(request) {
-//      case bodyString: String => request.body(bodyString)
-//      case _ => request
-//    }
-
     val cs = Http.get(system).singleRequest(HttpRequest.create(url))
     new JsCompletionStage(cs).`then`(r => new JsResponseAkka(r))
   }

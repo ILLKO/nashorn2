@@ -148,15 +148,16 @@
   self.Headers = Headers
   self.Request = Request
 
-  var FetchOnSttp = Packages.js.FetchOnSttp$.MODULE$;
+  var FetchOnAkka = Packages.js.FetchOnAkka$.MODULE$;
 
   self.fetch = function(input, init) {
-        print("fetching");
 
       var request = new Request(input, init)
       var headers = request.headers.map
 
-      return FetchOnSttp.fetch(request.method, request.url, headers, request);
+//        print("fetching " + request.url);
+
+      return FetchOnAkka.fetch(request.method, request.url, headers, request);
   };
 
 })(typeof self !== 'undefined' ? self : this);
