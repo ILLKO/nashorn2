@@ -9,13 +9,14 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Sink, Source}
 
 import scala.concurrent.duration._
+import scala.util.{Failure, Success}
 
-class AkkaHttpFlow {
+class AkkaHttpClient extends HttpClient {
   implicit val system = ActorSystem("client")
   implicit val materializer = ActorMaterializer()
   implicit val executionContext = system.dispatcher
 
-  def send(numRequests: Int, interval: FiniteDuration, host: String, port: Int, path: String) = {
+  override def send(numRequests: Int, interval: FiniteDuration, host: String, port: Int, path: String) = {
     val failuresAcc = new AtomicLong(0)
     val bytesAcc = new AtomicLong(0)
 
@@ -27,14 +28,14 @@ class AkkaHttpFlow {
     val connFlow = Http(system).cachedHostConnectionPool[Int](host = host, port = port)
 
     val sink = Sink.foreach[(util.Try[HttpResponse], Int)] {
-      case (util.Success(r), _) =>
+      case (Success(r), _) =>
         val entityFuture = r.entity.toStrict(10 seconds)
         entityFuture.foreach { entity =>
           bytesAcc.addAndGet(entity.contentLength)
           successLatch.countDown()
         }
 
-      case (util.Failure(ex), _) =>
+      case (Failure(ex), _) =>
         failuresAcc.incrementAndGet()
     }
 
@@ -42,28 +43,4 @@ class AkkaHttpFlow {
     successLatch.await()
   }
 
-}
-
-object AkkaHttpFlow {
-
-  val Host = "localhost"
-  val Port = 8080
-  val Path = "/"
-
-  def bench(numRequests: Int, responseSize: Int) = {
-    val server = new AkkaHttpServer()
-    import server.executionContext
-
-    val bf = server.serve("x" * responseSize, Host, Port, Path)
-
-    bf.map { b =>
-      val flow = new AkkaHttpFlow()
-      flow.send(numRequests, 3 millis, Host, Port, Path)
-      server.terminate(b)
-    }
-  }
-
-  def main(args: Array[String]): Unit = {
-    bench(300, 600 * 1000)
-  }
 }
