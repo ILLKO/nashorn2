@@ -23,6 +23,16 @@ class AkkaHttpServer {
     Http().bindAndHandle(route, host, port)
   }
 
+  def serve(pathToBody: Map[String, String], host: String, port: Int): Future[Http.ServerBinding] = {
+    val route = path(pathToBody) { body =>
+      get {
+        complete(HttpEntity(body))
+      }
+    }
+    Http().bindAndHandle(route, host, port)
+  }
+
+
   def terminate(binding: Http.ServerBinding) = {
     binding.unbind().onComplete(_ => system.terminate())
   }
