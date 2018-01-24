@@ -36,9 +36,7 @@ class FetchSpec extends Specification with StubServer {
   val path = "/my/resource"
   val httpOk = StatusCodes.OK
 
-  def getEngine = {
-    NashornEngine.instance
-  }
+  val engine = NashornEngine.init()
 
   "WireMock" should {
 
@@ -84,8 +82,7 @@ class FetchSpec extends Specification with StubServer {
            |})
        """.stripMargin
 
-      val ne = getEngine
-      val jcs = ne.evalString(js).asInstanceOf[JsCompletionStage[String]]
+      val jcs = engine.evalString(js).asInstanceOf[JsCompletionStage[String]]
 
       val f = FutureConverters.toScala(jcs.cs)
 
@@ -110,8 +107,7 @@ class FetchSpec extends Specification with StubServer {
            |})
        """.stripMargin
 
-      val ne = getEngine
-      val jcs = ne.evalString(js).asInstanceOf[JsCompletionStage[String]]
+      val jcs = engine.evalString(js).asInstanceOf[JsCompletionStage[String]]
 
       val f = FutureConverters.toScala(jcs.cs)
 
@@ -151,8 +147,7 @@ class FetchSpec extends Specification with StubServer {
            |});
            |""".stripMargin
 
-      val ne = getEngine
-      val jcs = ne.evalString(js).asInstanceOf[JsCompletionStage[Integer]]
+      val jcs = engine.evalString(js).asInstanceOf[JsCompletionStage[Integer]]
 
       val f = FutureConverters.toScala(jcs.cs)
 
@@ -170,8 +165,7 @@ class FetchSpec extends Specification with StubServer {
   }
 
   private def evalJs(js: String) = {
-    val ne = getEngine
-    ne.evalString(js).asInstanceOf[JsCompletionStage[JsResponse]]
+    engine.evalString(js).asInstanceOf[JsCompletionStage[JsResponse]]
   }
 
   private def checkResponse(jcs: JsCompletionStage[JsResponse], statusCode: StatusCode, body: String) = {

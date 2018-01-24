@@ -59,9 +59,9 @@ object JavascriptLogger {
 
 object NashornEngine {
 
-  val instance = init()
+  def init(): NashornEngine = init(ActorSystem("client"))
 
-  def init(): NashornEngine = init[JsResponseSttp]((ne: NashornEngine) => new FetchOnSttp(ActorSystem("sttp"), ne))
+  def init(system: ActorSystem): NashornEngine = init[JsResponseSttp]((ne: NashornEngine) => new FetchOnSttp(system, ne))
 
   def init[T <: JsResponse](newFetch: (NashornEngine => Fetch[T])): NashornEngine = {
 
