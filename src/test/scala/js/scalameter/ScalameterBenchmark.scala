@@ -1,5 +1,6 @@
 package js.scalameter
 
+import akka.actor.ActorSystem
 import org.scalameter.api._
 
 import scala.concurrent.Await
@@ -16,10 +17,10 @@ object ScalameterBenchmark extends Bench.LocalTime {
   val maxResponseSize = 600000
   val responseSizeStep = 200000
 
-  //    val responseSize = Gen.range("size")(minResponseSize, maxResponseSize, responseSizeStep)
-  //    val requestsPerSecond = Gen.range("size")(100, 2000, 100)
-  val responseSize = Gen.single("size")(100000)
-  val requestsPerSecond = Gen.single("rps")(200)
+  val responseSize = Gen.range("size")(minResponseSize, maxResponseSize, responseSizeStep)
+  val requestsPerSecond = Gen.range("requests")(200, 3000, 200)
+  //  val responseSize = Gen.single("size")(100000)
+  //  val requestsPerSecond = Gen.single("rps")(200)
 
   val pairs = Gen.crossProduct(responseSize, requestsPerSecond)
 
@@ -34,18 +35,26 @@ object ScalameterBenchmark extends Bench.LocalTime {
   val server = new AkkaHttpServer()
   val bindingFuture = server.serve(pathMap, Host, Port)
 
-  val client = new AkkaHttpClient()
+  val system = ActorSystem("client")
+  val akkaClient = new AkkaHttpClient(system)
+  val fetchClient = new FetchHttpClient(system)
+
+  //    config(
+  //      exec.benchRuns -> 2,
+  //      exec.independentSamples -> 2,
+  //      exec.minWarmupRuns -> 1,
+  //      exec.maxWarmupRuns -> 1
+  //    )
 
   measure method "akka http" in {
-    using(pairs) curve ("responseSize") config(
-      exec.benchRuns -> 2,
-      //      exec.independentSamples -> 2,
-      exec.minWarmupRuns -> 1,
-      exec.maxWarmupRuns -> 1
-    ) in { case (size, rps) =>
-      val tickInteval = 1000 * 1000 / rps
-      client.send(rps * interval, tickInteval micros, Host, Port, size.toString)
+    using(pairs) curve ("responseSize") in { case (size, rps) =>
+      akkaClient.send(rps * interval, Host, Port, size.toString)
     }
   }
 
+  measure method "fetch http" in {
+    using(pairs) curve ("responseSize") in { case (size, rps) =>
+      fetchClient.send(rps * interval, Host, Port, size.toString)
+    }
+  }
 }

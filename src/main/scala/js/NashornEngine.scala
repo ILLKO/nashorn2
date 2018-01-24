@@ -13,25 +13,25 @@ import scala.io.Source
 class NashornEngine(val engine: ScriptEngine, val sc: ScriptContext) {
 
   def evalResource(resource: String): AnyRef = {
-    print(s"Running $resource ")
+//    print(s"Running $resource ")
     val time = System.nanoTime()
     val code = NashornEngine.readResource(resource)
     val result = engine.eval(code)
     val elapsed = (System.nanoTime() - time) / (1000 * 1000)
-    println(s" done in $elapsed millis")
+//    println(s" done in $elapsed millis")
     result
   }
 
   def evalResourceAsync[A, B](resource: String, handler: PartialFunction[A, B]): Unit = {
     import scala.concurrent.ExecutionContext.Implicits.global
-    print(s"Running $resource ")
+//    print(s"Running $resource ")
 
     val p = Promise[A]()
     val f = p.future
 
     val code = NashornEngine.readResource(resource)
     engine.eval(code)
-    println(s" done")
+//    println(s" done")
 
     f.onSuccess(handler)
   }

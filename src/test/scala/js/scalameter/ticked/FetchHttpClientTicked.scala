@@ -1,19 +1,25 @@
-package js.scalameter
+package js.scalameter.ticked
 
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicLong
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import akka.stream.scaladsl.{Sink, Source}
+import js.scalameter.{HttpClient, HttpClientTicked}
 import js.{JsCompletionStage, NashornEngine}
 
 import scala.compat.java8.FutureConverters
+import scala.concurrent.duration._
 
-class FetchHttpClient(val system: ActorSystem) extends HttpClient {
+class FetchHttpClientTicked extends HttpClientTicked {
+  implicit val system = ActorSystem("client")
   implicit val materializer = ActorMaterializer()
   implicit val executionContext = system.dispatcher
 
+  val failuresAcc = new AtomicLong(0)
   val bytesAcc = new AtomicLong(0)
+  val successLatch = new CountDownLatch(300)
 
   def getNashornEngine: NashornEngine = {
     val ne = NashornEngine.instance
@@ -33,16 +39,25 @@ class FetchHttpClient(val system: ActorSystem) extends HttpClient {
     ne.evalString(js).asInstanceOf[JsCompletionStage[String]]
   }
 
-  override def send(numRequests: Int, host: String, port: Int, path: String) = {
-    val successLatch = new CountDownLatch(numRequests)
-    val url = s"http://$host:$port/$path"
+  override def send(numRequests: Int, interval: FiniteDuration, host: String, port: Int, path: String) = {
 
-    val jcs = fetch(url)
+    val url = s"http://$host:$port$path"
 
+    val ticks = Source.tick(3 millis, 3 millis, 1)
+
+    val fetchSource = Source.fromIterator(() => Iterator.continually(fetch(url)))
+
+    val sink = Sink.foreach[JsCompletionStage[String]](consume)
+
+    ticks.zip(fetchSource).map(_._2).takeWhile(_ => successLatch.getCount > 0).runWith(sink)
+    successLatch.await()
+  }
+
+  private def consume(jcs: JsCompletionStage[String]) = {
     FutureConverters.toScala(jcs.cs).foreach { body =>
       bytesAcc.addAndGet(body.length)
       successLatch.countDown()
+      println(successLatch.getCount)
     }
   }
-
 }
