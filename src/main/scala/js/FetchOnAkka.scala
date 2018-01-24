@@ -24,7 +24,7 @@ class FetchOnAkka(actorSystem: ActorSystem, val engine: NashornEngine) extends F
     CONNECT,
     TRACE).map { x => x.name() -> x }.toMap
 
-  implicit val system = ActorSystem("client")
+  implicit val system = actorSystem
   implicit val materializer = ActorMaterializer()
   // needed for the future flatMap/onComplete in the end
   implicit val executionContext = system.dispatcher
