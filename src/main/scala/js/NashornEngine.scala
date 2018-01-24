@@ -1,6 +1,5 @@
 package js
 
-import java.util.concurrent.Executors
 import java.util.function.Consumer
 import javax.script.{ScriptContext, ScriptEngine, SimpleScriptContext}
 

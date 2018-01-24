@@ -119,19 +119,21 @@ class FetchSpec extends Specification with StubServer {
     }
 
     "post request body string" in {
+      val PostRequestBody = "POST Request Body"
+      val PostResponseBody = "POST Response Body"
       stubFor(post(urlEqualTo(path))
-        .withRequestBody(WireMock.equalTo("request body"))
+        .withRequestBody(WireMock.equalTo(PostRequestBody))
         .willReturn(
           aResponse()
             .withStatus(httpOk.intValue)
-            .withBody("response body")))
+            .withBody(PostResponseBody)))
 
 
-      val js = s"""fetch("${url(path)}", { method: "POST", body: "request body"})"""
+      val js = s"""fetch("${url(path)}", { method: "POST", body: "$PostRequestBody"})"""
 
       val cs = evalJs(js)
 
-      checkResponse(cs, httpOk, "response body")
+      checkResponse(cs, httpOk, PostResponseBody)
     }
 
     "response json" in {
@@ -174,10 +176,10 @@ class FetchSpec extends Specification with StubServer {
   private def evalJs(js: String) = {
     val ne = getEngine
     ne.evalResource("/js/fetch.js")
-    ne.evalString(js).asInstanceOf[JsCompletionStage[JsResponseAkka]]
+    ne.evalString(js).asInstanceOf[JsCompletionStage[JsResponse]]
   }
 
-  private def checkResponse(jcs: JsCompletionStage[JsResponseAkka], statusCode: StatusCode, body: String) = {
+  private def checkResponse(jcs: JsCompletionStage[JsResponse], statusCode: StatusCode, body: String) = {
     val f = FutureConverters.toScala(jcs.cs)
     val response = Await.result(f, timeout)
     response.status === statusCode.intValue
