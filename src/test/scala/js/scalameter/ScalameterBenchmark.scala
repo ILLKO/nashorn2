@@ -1,13 +1,11 @@
 package js.scalameter
 
 import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
 import org.scalameter.api._
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
 import org.scalameter.picklers.Implicits._
 
-import scala.collection.immutable
+import scala.concurrent.Future
 
 object ScalameterBenchmark extends Bench.LocalTime {
 
@@ -16,11 +14,11 @@ object ScalameterBenchmark extends Bench.LocalTime {
   val minResponseSize = 200000
   val maxResponseSize = 600000
   val responseSizeStep = 200000
+  //  val responseSize = Gen.range("size")(minResponseSize, maxResponseSize, responseSizeStep)
+  //  val requestsPerSecond = Gen.range("requests")(100, 300, 100)
 
-  val responseSize = Gen.range("size")(minResponseSize, maxResponseSize, responseSizeStep)
-  val requestsPerSecond = Gen.range("requests")(200, 3000, 200)
-  //  val responseSize = Gen.single("size")(100000)
-  //  val requestsPerSecond = Gen.single("rps")(200)
+  val responseSize = Gen.single("size")(maxResponseSize)
+  val requestsPerSecond = Gen.single("rps")(300)
 
   val pairs = Gen.crossProduct(responseSize, requestsPerSecond)
 
@@ -32,29 +30,43 @@ object ScalameterBenchmark extends Bench.LocalTime {
     size.toString -> size.toString.head.toString * size
   }.toMap
 
-  val server = new AkkaHttpServer()
-  val bindingFuture = server.serve(pathMap, Host, Port)
+  var server: AkkaHttpServer = _
+  var clientSystem: ActorSystem = _
+  var client: HttpClient = _
 
-  val system = ActorSystem("client")
-  val akkaClient = new AkkaHttpClient(system)
-  val fetchClient = new FetchHttpClient(system)
+  def startServer() = {
+    server = AkkaHttpServer.serve(pathMap, Host, Port)
+  }
 
-  //    config(
-  //      exec.benchRuns -> 2,
-  //      exec.independentSamples -> 2,
-  //      exec.minWarmupRuns -> 1,
-  //      exec.maxWarmupRuns -> 1
-  //    )
+  def stopServer() = {
+    server.terminate()
+  }
+
+  def beforeAfter[T](using: Using[T], newClient: ActorSystem => HttpClient): ScalameterBenchmark.Using[T] = {
+    using beforeTests {
+      clientSystem = ActorSystem("client")
+      client = newClient(clientSystem)
+      startServer()
+    } afterTests {
+      stopServer()
+      clientSystem.terminate()
+    }
+  }
 
   measure method "akka http" in {
-    using(pairs) curve ("responseSize") in { case (size, rps) =>
-      akkaClient.send(rps * interval, Host, Port, size.toString)
+    beforeAfter(using(pairs), (s: ActorSystem) => new AkkaHttpClient()(s)) in {
+      case (size, rps) =>
+        client.send(rps * interval, Host, Port, size.toString)
     }
   }
 
   measure method "fetch http" in {
-    using(pairs) curve ("responseSize") in { case (size, rps) =>
-      fetchClient.send(rps * interval, Host, Port, size.toString)
+    val system = ActorSystem("client")
+    val fetchClient = new FetchHttpClient()(system)
+
+    beforeAfter(using(pairs), (s: ActorSystem) => new FetchHttpClient()(s)) in {
+      case (size, rps) =>
+        client.send(rps * interval, Host, Port, size.toString)
     }
   }
 }

@@ -1,19 +1,14 @@
 package js.scalameter
 
 import java.util.concurrent.CountDownLatch
-import java.util.concurrent.atomic.AtomicLong
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import js.{JsCompletionStage, NashornEngine}
 
 import scala.compat.java8.FutureConverters
 
-class FetchHttpClient(val system: ActorSystem) extends HttpClient {
-  implicit val materializer = ActorMaterializer()
+class FetchHttpClient(implicit system: ActorSystem) extends HttpClient {
   implicit val executionContext = system.dispatcher
-
-  val bytesAcc = new AtomicLong(0)
 
   def getNashornEngine: NashornEngine = {
     val ne = NashornEngine.instance
@@ -33,16 +28,15 @@ class FetchHttpClient(val system: ActorSystem) extends HttpClient {
     ne.evalString(js).asInstanceOf[JsCompletionStage[String]]
   }
 
-  override def send(numRequests: Int, host: String, port: Int, path: String) = {
-    val successLatch = new CountDownLatch(numRequests)
-    val url = s"http://$host:$port/$path"
-
+  override def send(url: String, successLatch: CountDownLatch) = {
     val jcs = fetch(url)
 
-    FutureConverters.toScala(jcs.cs).foreach { body =>
+    val future = FutureConverters.toScala(jcs.cs)
+    future.foreach { body =>
       bytesAcc.addAndGet(body.length)
       successLatch.countDown()
     }
+    resendOnFailure(future, url, successLatch)
   }
 
 }

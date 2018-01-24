@@ -6,7 +6,8 @@ import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.server.Directives.{complete, get, path}
 import akka.stream.ActorMaterializer
 
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration._
 
 class AkkaHttpServer {
   implicit val system = ActorSystem("server")
@@ -14,26 +15,28 @@ class AkkaHttpServer {
   // needed for the future flatMap/onComplete in the end
   implicit val executionContext = system.dispatcher
 
-  def serve(body: String, host: String, port: Int, p: String): Future[Http.ServerBinding] = {
-    val route = path(p) {
-      get {
-        complete(HttpEntity(body))
-      }
-    }
-    Http().bindAndHandle(route, host, port)
-  }
+  var binding: Http.ServerBinding = _
 
-  def serve(pathToBody: Map[String, String], host: String, port: Int): Future[Http.ServerBinding] = {
+  private def serve(pathToBody: Map[String, String], host: String, port: Int): Unit = {
     val route = path(pathToBody) { body =>
       get {
         complete(HttpEntity(body))
       }
     }
-    Http().bindAndHandle(route, host, port)
+    val bindingFuture = Http().bindAndHandle(route, host, port)
+    binding = Await.result(bindingFuture, 2 seconds)
   }
 
-
-  def terminate(binding: Http.ServerBinding) = {
+  def terminate() = {
     binding.unbind().onComplete(_ => system.terminate())
+  }
+}
+
+object AkkaHttpServer {
+
+  def serve(pathToBody: Map[String, String], host: String, port: Int): AkkaHttpServer = {
+    val server = new AkkaHttpServer
+    server.serve(pathToBody, host, port)
+    server
   }
 }
