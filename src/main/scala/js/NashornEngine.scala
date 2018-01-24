@@ -53,8 +53,6 @@ object JavascriptLogger {
 
 object NashornEngine {
 
-  val globalScheduledThreadPool = Executors.newScheduledThreadPool(20)
-
   val instance = init()
 
   def init(): NashornEngine = {

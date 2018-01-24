@@ -6,7 +6,7 @@ import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.server.Directives.{complete, get, path}
 import akka.stream.ActorMaterializer
 
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class AkkaHttpServer {

@@ -1,11 +1,8 @@
 package js.scalameter
 
 import akka.actor.ActorSystem
-import akka.http.scaladsl.Http
 import org.scalameter.api._
 import org.scalameter.picklers.Implicits._
-
-import scala.concurrent.Future
 
 object ScalameterBenchmark extends Bench.LocalTime {
 
@@ -61,9 +58,6 @@ object ScalameterBenchmark extends Bench.LocalTime {
   }
 
   measure method "fetch http" in {
-    val system = ActorSystem("client")
-    val fetchClient = new FetchHttpClient()(system)
-
     beforeAfter(using(pairs), (s: ActorSystem) => new FetchHttpClient()(s)) in {
       case (size, rps) =>
         client.send(rps * interval, Host, Port, size.toString)
