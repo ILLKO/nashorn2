@@ -23,7 +23,7 @@ libraryDependencies ++= Seq(
 //  "com.typesafe.akka" %% "akka-http" % akkaHttpV,
   "org.apache.commons" % "commons-pool2" % "2.4.2",
   "com.typesafe.akka" %% "akka-actor" % akkaV,
-  "com.fasterxml.jackson.core" % "jackson-databind" % "2.7.5",
+  "com.fasterxml.jackson.core" % "jackson-databind" % "2.8.9",
   "org.slf4j" % "slf4j-api" % slf4jV,
   "org.slf4j" % "slf4j-simple" % slf4jV,
   "org.specs2" %% "specs2-core" % specsV % Test,

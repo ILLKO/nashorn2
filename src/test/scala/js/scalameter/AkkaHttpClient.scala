@@ -32,11 +32,14 @@ class AkkaHttpClient extends HttpClient {
         val entityFuture = r.entity.toStrict(10 seconds)
         entityFuture.foreach { entity =>
           bytesAcc.addAndGet(entity.contentLength)
+//          println("success, to go: " +successLatch.getCount)
+
           successLatch.countDown()
         }
 
       case (Failure(ex), _) =>
-        failuresAcc.incrementAndGet()
+        val failures = failuresAcc.incrementAndGet()
+  //      println("failures: " + failures)
     }
 
     ticks.takeWhile(_ => successLatch.getCount > 0).via(connFlow).to(sink).run
