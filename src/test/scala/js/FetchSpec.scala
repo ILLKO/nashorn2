@@ -36,6 +36,10 @@ class FetchSpec extends Specification with StubServer {
   val path = "/my/resource"
   val httpOk = StatusCodes.OK
 
+  def getEngine = {
+    NashornEngine.instance
+  }
+
   "WireMock" should {
 
     "stub in js" in {
@@ -155,10 +159,6 @@ class FetchSpec extends Specification with StubServer {
       val response = Await.result(f, timeout)
       response === 43928588
     }
-  }
-
-  def getEngine = {
-    NashornEngine.instance
   }
 
   private def stubResponse(path: String, code: Int, body: String) = {

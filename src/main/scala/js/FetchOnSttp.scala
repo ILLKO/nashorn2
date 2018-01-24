@@ -6,11 +6,11 @@ import com.softwaremill.sttp.akkahttp.AkkaHttpBackend
 
 import scala.collection.JavaConverters._
 import scala.compat.java8.FutureConverters
-import scala.concurrent.ExecutionContext.Implicits.global
 
-class FetchOnSttp(val system: ActorSystem) extends Fetch[JsResponseSttp] {
+class FetchOnSttp(val system: ActorSystem, val engine: NashornEngine) extends Fetch[JsResponseSttp] {
 
   import com.softwaremill.sttp.Method._
+  import system.dispatcher
 
   implicit val sttpBackend = AkkaHttpBackend.usingActorSystem(system)(system.dispatcher)
 
@@ -37,7 +37,10 @@ class FetchOnSttp(val system: ActorSystem) extends Fetch[JsResponseSttp] {
       case _ => request
     }
 
-    val f = withBody.send().map(r => new JsResponseSttp(r))
+    val f = withBody.send().map { response =>
+      val headers = engine.newObject("Headers", response.headers.toMap.asJava)
+      new JsResponseSttp(response, headers)
+    }
     new JsCompletionStage(FutureConverters.toJava(f))
   }
 

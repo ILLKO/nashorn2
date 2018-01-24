@@ -10,7 +10,7 @@ import org.slf4j.{Logger, LoggerFactory}
 import scala.concurrent.Promise
 import scala.io.Source
 
-class NashornEngine[T <: JsResponse](val engine: ScriptEngine, val sc: ScriptContext, fetch: Fetch[T]) {
+class NashornEngine(val engine: ScriptEngine, val sc: ScriptContext) {
 
   def evalResource(resource: String): AnyRef = {
     //    print(s"Running $resource ")
@@ -23,10 +23,10 @@ class NashornEngine[T <: JsResponse](val engine: ScriptEngine, val sc: ScriptCon
   }
 
   def putFetcher[T <: JsResponse](fetcher: Fetch[T]): Unit = {
-    engine.getBindings(ScriptContext.ENGINE_SCOPE).put("__FETCH_IMPL__", fetcher)
+    sc.setAttribute("__FETCH_IMPL__", fetcher, ScriptContext.ENGINE_SCOPE)
   }
 
-  def getFetcher[T <: JsResponse] = engine.getBindings(ScriptContext.ENGINE_SCOPE).get("__FETCH_IMPL__").asInstanceOf[Fetch[T]]
+  def getFetcher[T <: JsResponse] = sc.getAttribute("__FETCH_IMPL__", ScriptContext.ENGINE_SCOPE).asInstanceOf[Fetch[T]]
 
   def evalResourceAsync[A, B](resource: String, handler: PartialFunction[A, B]): Unit = {
     import scala.concurrent.ExecutionContext.Implicits.global
@@ -61,9 +61,9 @@ object NashornEngine {
 
   val instance = init()
 
-  def init(): NashornEngine[JsResponseSttp] = init[JsResponseSttp](new FetchOnSttp(ActorSystem("sttp")))
+  def init(): NashornEngine = init[JsResponseSttp]((ne: NashornEngine) => new FetchOnSttp(ActorSystem("sttp"), ne))
 
-  def init[T <: JsResponse](fetch: Fetch[T]): NashornEngine[T] = {
+  def init[T <: JsResponse](newFetch: (NashornEngine => Fetch[T])): NashornEngine = {
 
     import javax.script.ScriptEngineManager
 
@@ -71,9 +71,10 @@ object NashornEngine {
     val engine: ScriptEngine = manager.getEngineByName("nashorn")
     assert(engine != null, "could not get nashorn engine")
 
-    val sc: SimpleScriptContext = initScriptContext(engine, fetch)
+    val sc: SimpleScriptContext = initScriptContext(engine)
 
-    val ne = new NashornEngine(engine, sc, fetch)
+    val ne = new NashornEngine(engine, sc)
+    ne.putFetcher(newFetch(ne))
     ne.evalResource("/js/fetch.js")
     ne
   }
@@ -92,7 +93,7 @@ object NashornEngine {
     }
   }
 
-  def initScriptContext[T <: JsResponse](engine: ScriptEngine, fetch: Fetch[T]): SimpleScriptContext = {
+  def initScriptContext[T <: JsResponse](engine: ScriptEngine): SimpleScriptContext = {
 
     val sc = new SimpleScriptContext()
     val bindings = engine.getBindings(ScriptContext.ENGINE_SCOPE)
@@ -100,7 +101,6 @@ object NashornEngine {
     sc.setBindings(bindings, ScriptContext.ENGINE_SCOPE)
     sc.setAttribute("consoleLogInfo", consoleLogInfo, ScriptContext.ENGINE_SCOPE)
     sc.setAttribute("consoleLogError", consoleLogError, ScriptContext.ENGINE_SCOPE)
-    sc.setAttribute("__FETCH_IMPL__", fetch, ScriptContext.ENGINE_SCOPE)
 
     //    val initialBindings = sc.getBindings(ScriptContext.ENGINE_SCOPE)
     sc
