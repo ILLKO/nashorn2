@@ -4,6 +4,7 @@ import java.util
 
 import akka.http.javadsl.model.{HttpResponse, StatusCodes}
 import com.fasterxml.jackson.databind.ObjectMapper
+import jdk.nashorn.api.scripting.JSObject
 
 import scala.concurrent.duration._
 
@@ -17,7 +18,7 @@ trait JsResponse {
 
 }
 
-class JsResponseAkka(val response: HttpResponse, val fetch: FetchOnAkka) extends JsResponse {
+class JsResponseAkka(val response: HttpResponse, val headers: JSObject, val fetch: FetchOnAkka) extends JsResponse {
 
   implicit val materializer = fetch.materializer
   implicit val executionContext = fetch.system.dispatcher
@@ -28,10 +29,8 @@ class JsResponseAkka(val response: HttpResponse, val fetch: FetchOnAkka) extends
   val statusText: String = response.status.reason()
   val ok: Boolean = response.status == StatusCodes.OK
 
-  val headers = Map.empty //NashornEngine.instance.newObject("Headers", /*response.headers.toMap*/ Map.empty.asJava)
-
   def text(): JsCompletionStage[String] = {
-    val f = response.entity.toStrict(1000, materializer)
+    val f = response.entity.toStrict(timeout.toMillis, materializer)
     new JsCompletionStage(f).`then`(e => e.getData.utf8String)
   }
 

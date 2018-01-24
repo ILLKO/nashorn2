@@ -61,7 +61,7 @@ object NashornEngine {
 
   def init(): NashornEngine = init(ActorSystem("client"))
 
-  def init(system: ActorSystem): NashornEngine = init[JsResponseSttp]((ne: NashornEngine) => new FetchOnSttp(system, ne))
+  def init(system: ActorSystem): NashornEngine = init((ne: NashornEngine) => new FetchOnAkka(system, ne))
 
   def init[T <: JsResponse](newFetch: (NashornEngine => Fetch[T])): NashornEngine = {
 

@@ -3,7 +3,7 @@ package js.scalameter
 import java.util.concurrent.CountDownLatch
 
 import akka.actor.ActorSystem
-import js.{FetchOnSttp, JsCompletionStage, NashornEngine}
+import js.{FetchOnAkka, FetchOnSttp, JsCompletionStage, NashornEngine}
 
 import scala.compat.java8.FutureConverters
 
@@ -13,7 +13,7 @@ class FetchHttpClient(implicit system: ActorSystem) extends HttpClient {
   val ne = getNashornEngine
 
   def getNashornEngine = {
-    NashornEngine.init(new FetchOnSttp(system, _))
+    NashornEngine.init(new FetchOnAkka(system, _))
   }
 
   def fetch(url: String): JsCompletionStage[String] = {
