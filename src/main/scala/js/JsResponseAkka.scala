@@ -17,12 +17,12 @@ trait JsResponse {
 
 }
 
-class JsResponseAkka(val response: HttpResponse) extends JsResponse {
+class JsResponseAkka(val response: HttpResponse, val fetch: FetchOnAkka) extends JsResponse {
 
-  implicit val materializer = FetchOnAkka.materializer
-  implicit val executionContext = FetchOnAkka.system.dispatcher
+  implicit val materializer = fetch.materializer
+  implicit val executionContext = fetch.system.dispatcher
 
-  val timeout = 21 second
+  val timeout = 10 seconds
 
   val status: Int = response.status.intValue()
   val statusText: String = response.status.reason()

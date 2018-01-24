@@ -148,7 +148,7 @@
   self.Headers = Headers
   self.Request = Request
 
-  var Fetcher = Packages.js.FetchOnSttp$.MODULE$;
+  var Fetcher =  self.__FETCH_IMPL__;
 
   self.fetch = function(input, init) {
 

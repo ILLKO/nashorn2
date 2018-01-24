@@ -10,7 +10,9 @@ import scala.compat.java8.FutureConverters
 class FetchHttpClient(implicit system: ActorSystem) extends HttpClient {
   implicit val executionContext = system.dispatcher
 
-  def getNashornEngine: NashornEngine = {
+  val ne = getNashornEngine
+
+  def getNashornEngine = {
     val ne = NashornEngine.instance
     ne.evalResource("/js/fetch.js")
     ne
@@ -24,7 +26,6 @@ class FetchHttpClient(implicit system: ActorSystem) extends HttpClient {
          |})
        """.stripMargin
 
-    val ne = getNashornEngine
     ne.evalString(js).asInstanceOf[JsCompletionStage[String]]
   }
 

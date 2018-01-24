@@ -8,12 +8,11 @@ import scala.collection.JavaConverters._
 import scala.compat.java8.FutureConverters
 import scala.concurrent.ExecutionContext.Implicits.global
 
-object FetchOnSttp extends Fetch[JsResponseSttp] {
+class FetchOnSttp(val system: ActorSystem) extends Fetch[JsResponseSttp] {
 
   import com.softwaremill.sttp.Method._
 
-  override val system = ActorSystem("sttp")
-  implicit val sttpBackend = AkkaHttpBackend()
+  implicit val sttpBackend = AkkaHttpBackend.usingActorSystem(system)(system.dispatcher)
 
   val methodsMaps: Map[String, Method] = Seq(
     GET,

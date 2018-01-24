@@ -61,7 +61,6 @@ class FetchSpec extends Specification with StubServer {
            |""".stripMargin
 
       val ne = NashornEngine.init()
-      ne.evalResource("/js/fetch.js")
       val jcs = ne.evalString(js).asInstanceOf[JsCompletionStage[String]]
 
       val f = FutureConverters.toScala(jcs.cs)
@@ -82,7 +81,6 @@ class FetchSpec extends Specification with StubServer {
        """.stripMargin
 
       val ne = getEngine
-      ne.evalResource("/js/fetch.js")
       val jcs = ne.evalString(js).asInstanceOf[JsCompletionStage[String]]
 
       val f = FutureConverters.toScala(jcs.cs)
@@ -109,7 +107,6 @@ class FetchSpec extends Specification with StubServer {
        """.stripMargin
 
       val ne = getEngine
-      ne.evalResource("/js/fetch.js")
       val jcs = ne.evalString(js).asInstanceOf[JsCompletionStage[String]]
 
       val f = FutureConverters.toScala(jcs.cs)
@@ -151,7 +148,6 @@ class FetchSpec extends Specification with StubServer {
            |""".stripMargin
 
       val ne = getEngine
-      ne.evalResource("/js/fetch.js")
       val jcs = ne.evalString(js).asInstanceOf[JsCompletionStage[Integer]]
 
       val f = FutureConverters.toScala(jcs.cs)
@@ -161,7 +157,7 @@ class FetchSpec extends Specification with StubServer {
     }
   }
 
-  def getEngine: NashornEngine = {
+  def getEngine = {
     NashornEngine.instance
   }
 
@@ -175,7 +171,6 @@ class FetchSpec extends Specification with StubServer {
 
   private def evalJs(js: String) = {
     val ne = getEngine
-    ne.evalResource("/js/fetch.js")
     ne.evalString(js).asInstanceOf[JsCompletionStage[JsResponse]]
   }
 

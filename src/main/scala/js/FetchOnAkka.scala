@@ -5,16 +5,7 @@ import akka.http.javadsl.Http
 import akka.http.javadsl.model.{HttpMethod, HttpMethods, HttpRequest}
 import akka.stream.ActorMaterializer
 
-trait Fetch[T <: JsResponse] {
-
-  val system: ActorSystem
-
-  def fetch(method: String, url: String,
-            headers: java.util.Map[String, String] = new java.util.HashMap,
-            requestObj: java.util.Map[String, AnyRef] = new java.util.HashMap): JsCompletionStage[T]
-}
-
-object FetchOnAkka extends Fetch[JsResponseAkka] {
+class FetchOnAkka(actorSystem: ActorSystem) extends Fetch[JsResponseAkka] {
 
   import HttpMethods._
   val methodsMaps: Map[String, HttpMethod] = Seq(
@@ -39,6 +30,6 @@ object FetchOnAkka extends Fetch[JsResponseAkka] {
     val request = HttpRequest.create(url).withMethod(methodsMaps(method))
 
     val cs = Http.get(system).singleRequest(request)
-    new JsCompletionStage(cs).`then`(r => new JsResponseAkka(r))
+    new JsCompletionStage(cs).`then`(r => new JsResponseAkka(r, this))
   }
 }
